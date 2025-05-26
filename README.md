@@ -9,4 +9,5 @@ Season 2 of the South Korean reality game show "Devil's Plan" introduced a simpl
 Currently, wall breaking has not been added as a feature, and player vs computer matches have yet to be introduced.
 
 ## Inspiration
+
 I was partially inspired by some other guys who tried their hand at recreating the game as well, which is accessible in-browser and doesn't require a download. At the time of writing, their version isn't quite as complete, but is certainly improving: https://www.wallgoal.com/
