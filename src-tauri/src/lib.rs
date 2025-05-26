@@ -258,6 +258,13 @@ fn wall_v_exists(game: &GameState, row: usize, col: usize) -> bool {
 }
 
 #[tauri::command]
+fn next_player(state: State<SharedGameState>) -> GameState {
+    let mut game = state.lock().unwrap();
+    game.current_player = (game.current_player + 1) % game.num_players;
+    game.clone()
+}
+
+#[tauri::command]
 fn place_wall(wall_type: String, row: usize, col: usize, state: State<SharedGameState>) -> GameState {
     let mut game = state.lock().unwrap();
     if !game.wall_pending { return game.clone(); }
@@ -441,7 +448,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(GameState::default()))
-        .invoke_handler(tauri::generate_handler![get_game_state, can_place_adjacent_wall, get_valid_moves_for_piece, has_valid_moves, move_piece, place_wall, reset_game, start_main_phase, set_board, set_board_and_player, get_valid_moves_for_piece, get_region_scores])
+        .invoke_handler(tauri::generate_handler![next_player, get_game_state, can_place_adjacent_wall, get_valid_moves_for_piece, has_valid_moves, move_piece, place_wall, reset_game, start_main_phase, set_board, set_board_and_player, get_valid_moves_for_piece, get_region_scores])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

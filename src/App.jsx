@@ -119,6 +119,11 @@ function App() {
           }
         }
         await Promise.all(promises);
+        if (Object.values(newSelectable).every(val => val === false)) {
+          // If no selectable pieces, automatically move to next player
+          const state = await invoke("next_player");
+          setFromBackend(state);
+        }
         setSelectablePieces(newSelectable);
       };
       fetchSelectable();
