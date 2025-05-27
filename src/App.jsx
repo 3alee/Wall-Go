@@ -31,18 +31,16 @@ function getDefaultTokens(numPlayers, piecesPerPlayer) {
 }
 
 function App() {
-  // Add boardSize state
-  const [boardSize, setBoardSize] = useState(7);
-
-  // Use boardSize everywhere instead of BOARD_SIZE
+  // Use string state for boardSize and piecesPerPlayer for input flexibility
+  const [boardSize, setBoardSize] = useState("7");
+  const [piecesPerPlayer, setPiecesPerPlayer] = useState("2");
+  const [numPlayers, setNumPlayers] = useState(2);
   const [board, setBoard] = useState(Array(boardSize).fill(null).map(() => Array(boardSize).fill(null)));
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [winner, setWinner] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showSetupOptions, setShowSetupOptions] = useState(true);
   const [setup, setSetup] = useState(false);
-  const [numPlayers, setNumPlayers] = useState(2);
-  const [piecesPerPlayer, setPiecesPerPlayer] = useState(2);
   const [tokens, setTokens] = useState(getDefaultTokens(2, 2));
   const [setupTokens, setSetupTokens] = useState(getDefaultTokens(2, 2));
   const [setupTurn, setSetupTurn] = useState(0);
@@ -72,7 +70,7 @@ function App() {
 
   // Update setFromBackend to use boardSize from backend if present
   function setFromBackend(state) {
-    if (typeof state.board_size === "number") setBoardSize(state.board_size);
+    if (typeof state.board_size === "number") setBoardSize(String(state.board_size));
     setBoard(state.board.map(row => row.map(cell => cell === null ? null : cell)));
     setCurrentPlayer(state.current_player);
     setWinner(state.winner);
@@ -82,7 +80,7 @@ function App() {
     setWallPending(state.wall_pending || false);
     setPhase(state.phase === "Setup" ? "setup" : "main");
     if (typeof state.num_players === 'number') setNumPlayers(state.num_players);
-    if (typeof state.pieces_per_player === 'number') setPiecesPerPlayer(state.pieces_per_player);
+    if (typeof state.pieces_per_player === 'number') setPiecesPerPlayer(String(state.pieces_per_player));
     if (state.tokens) setTokens(state.tokens);
     // NEW: Track last moved piece for wall placement
     if (state.move_path && state.move_path.length > 0) {
@@ -103,9 +101,10 @@ function App() {
     if (phase === "main" && !loading) {
       const fetchSelectable = async () => {
         const newSelectable = {};
+        const size = parseInt(boardSize, 10) || 7;
         const promises = [];
-        for (let row = 0; row < boardSize; row++) {
-          for (let col = 0; col < boardSize; col++) {
+        for (let row = 0; row < size; row++) {
+          for (let col = 0; col < size; col++) {
             if (board[row][col] === currentPlayer) {
               // Check for valid moves
               promises.push(
@@ -189,11 +188,16 @@ function App() {
   // Update handleSetupOptionsSubmit to use boardSize
   function handleSetupOptionsSubmit(e) {
     e.preventDefault();
-    setTokens(getDefaultTokens(numPlayers, piecesPerPlayer));
-    setSetupTokens(getDefaultTokens(numPlayers, piecesPerPlayer));
+    // Clamp and convert values
+    const size = Math.max(5, Math.min(15, parseInt(boardSize, 10) || 7));
+    const pieces = Math.max(1, Math.min(size, parseInt(piecesPerPlayer, 10) || 1));
+    setBoardSize(String(size));
+    setPiecesPerPlayer(String(pieces));
+    setBoard(Array(size).fill(null).map(() => Array(size).fill(null)));
+    setTokens(getDefaultTokens(numPlayers, pieces));
+    setSetupTokens(getDefaultTokens(numPlayers, pieces));
     setSetupTurn(0);
     setSetupDirection(1);
-    setBoard(Array(boardSize).fill(null).map(() => Array(boardSize).fill(null)));
     setWinner(null);
     setLoading(false);
     setShowSetupOptions(false);
@@ -202,6 +206,14 @@ function App() {
     setSelectedRow(null);
     setSelectedCol(null);
   }
+
+  // Responsive SVG style
+  const svgStyle = {
+    display: "block",
+    position: "relative",
+    zIndex: 1,
+    background: "#fff"
+  };
 
   // In the setup options form:
   if (showSetupOptions) {
@@ -218,12 +230,12 @@ function App() {
                 max={15}
                 value={boardSize}
                 onChange={e => {
-                  const n = Math.max(5, Math.min(15, parseInt(e.target.value, 10) || 7));
-                  setBoardSize(n);
-                  setBoard(Array(n).fill(null).map(() => Array(n).fill(null)));
-                  setPiecesPerPlayer(Math.min(piecesPerPlayer, n));
-                  setTokens(getDefaultTokens(numPlayers, Math.min(piecesPerPlayer, n)));
-                  setSetupTokens(getDefaultTokens(numPlayers, Math.min(piecesPerPlayer, n)));
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setBoardSize("");
+                    return;
+                  }
+                  setBoardSize(raw);
                 }}
                 style={{ width: 60, marginLeft: 8 }}
               />
@@ -240,8 +252,8 @@ function App() {
                 onChange={e => {
                   const n = parseInt(e.target.value, 10);
                   setNumPlayers(n);
-                  setTokens(getDefaultTokens(n, piecesPerPlayer));
-                  setSetupTokens(getDefaultTokens(n, piecesPerPlayer));
+                  setTokens(getDefaultTokens(n, Number(piecesPerPlayer) || 1));
+                  setSetupTokens(getDefaultTokens(n, Number(piecesPerPlayer) || 1));
                 }}
                 style={{ width: 60, marginLeft: 8 }}
               />
@@ -253,21 +265,19 @@ function App() {
               <input
                 type="number"
                 min={1}
-                max={boardSize}
+                max={boardSize === "" ? 15 : Number(boardSize)}
                 value={piecesPerPlayer}
                 onChange={e => {
-                  const val = Math.max(1, Math.min(boardSize, parseInt(e.target.value, 10) || 1));
-                  setPiecesPerPlayer(val);
-                  setTokens(getDefaultTokens(numPlayers, val));
-                  setSetupTokens(getDefaultTokens(numPlayers, val));
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setPiecesPerPlayer("");
+                    return;
+                  }
+                  setPiecesPerPlayer(raw);
                 }}
                 style={{ width: 60, marginLeft: 8 }}
               />
             </label>
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <b>Tokens per player:</b>
-            <span style={{ marginLeft: 8, fontWeight: "bold" }}>{piecesPerPlayer}</span>
           </div>
           <button type="submit">Start Setup Phase</button>
         </form>
@@ -276,12 +286,14 @@ function App() {
   }
 
   if (setup) {
+    const size = parseInt(boardSize, 10) || 7;
     const totalTokens = setupTokens.reduce((a, b) => a + b, 0);
     if (totalTokens === 0 && !setupTransitioned) {
       setSetupTransitioned(true);
       (async () => {
         setSetup(false);
-        setTokens(getDefaultTokens(numPlayers, piecesPerPlayer));
+        const val = Math.max(1, Math.min(size, parseInt(piecesPerPlayer, 10) || 1));
+        setTokens(getDefaultTokens(numPlayers, val));
         setLoading(true);
         const rustBoard = board.map(row => row.map(cell => (cell === null ? null : cell)));
         // Determine the next player after setup phase
@@ -291,8 +303,8 @@ function App() {
           newBoard: rustBoard,
           currentPlayer: nextPlayer,
           numPlayers: numPlayers,
-          piecesPerPlayer: piecesPerPlayer,
-          boardSize: boardSize,
+          piecesPerPlayer: val,
+          boardSize: size,
         });
         await invoke("start_main_phase");
         const afterMainPhase = await invoke("get_game_state");
@@ -319,148 +331,95 @@ function App() {
               position: "relative",
             }}
           >
-            {/* Board styled like main phase */}
-            <div
-              style={{
-                display: "inline-block",
-                border: "2px solid #333",
-                background: "#fff",
-                marginBottom: 16,
-                position: "relative",
-                minWidth: boardSize * BOARD_DIM,
-                maxWidth: boardSize * BOARD_DIM,
-                minHeight: boardSize * BOARD_DIM,
-                maxHeight: boardSize * BOARD_DIM,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                borderRadius: 8,
-              }}
-            >
-              <div style={{ position: "relative", display: "inline-block" }}>
-                {/* Table background image */}
-                <img
-                  src="/wood_table.jpg"
-                  alt="background"
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    width: boardSize * BOARD_DIM,
-                    height: boardSize * BOARD_DIM,
-                    objectFit: "cover",
-                    borderRadius: 8,
-                    zIndex: 0,
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}
-                  draggable={false}
-                />
-                {/* Board SVG */}
-                <svg
-                  width={boardSize * BOARD_DIM}
-                  height={boardSize * BOARD_DIM}
-                  style={{ display: "block", position: "relative", zIndex: 1 }}
-                >
-                  {/* Table background image */}
-                  {/* {<img
-                    src="/wood_table.jpg" // or your image URL
-                    alt="background"
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      width: boardSize * BOARD_DIM * 2,
-                      height: boardSize * BOARD_DIM * 2,
-                      objectFit: "cover",
-                      borderRadius: 8,
-                      zIndex: 0,
-                      pointerEvents: "none",
-                      userSelect: "none",
-                    }}
-                    draggable={false}
-                  />} */}
-                  {/* Cell background images */}
-                  {board.map((rowArr, rowIdx) =>
-                    rowArr.map((_, colIdx) => (
+            <div className="board-container">
+              <svg
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${size} ${size}`}
+                style={svgStyle}
+              >
+                {/* Cell background images */}
+                {board.map((rowArr, rowIdx) =>
+                  rowArr.map((_, colIdx) => (
+                    <image
+                      key={`cell-bg-${rowIdx}-${colIdx}`}
+                      href="/boardcell.png"
+                      x={colIdx}
+                      y={rowIdx}
+                      width={1}
+                      height={1}
+                      style={{
+                        pointerEvents: "none",
+                        userSelect: "none"
+                      }}
+                      draggable={false}
+                    />
+                  ))
+                )}
+
+                {/* Draw setup pieces */}
+                {board.map((rowArr, rowIdx) =>
+                  rowArr.map((cell, colIdx) =>
+                    cell !== null ? (
                       <image
-                        key={`cell-bg-${rowIdx}-${colIdx}`}
-                        href="/boardcell.png"
-                        x={colIdx * BOARD_DIM}
-                        y={rowIdx * BOARD_DIM}
-                        width={BOARD_DIM}
-                        height={BOARD_DIM}
+                        key={`setup-piece-${rowIdx}-${colIdx}`}
+                        href={PLAYER_IMAGES[cell]}
+                        x={colIdx + 0.1}
+                        y={rowIdx + 0.1}
+                        width={0.8}
+                        height={0.8}
                         style={{
                           pointerEvents: "none",
                           userSelect: "none"
                         }}
                         draggable={false}
                       />
-                    ))
-                  )}
+                    ) : null
+                  )
+                )}
 
-                  {/* Draw setup pieces */}
-                  {board.map((rowArr, rowIdx) =>
-                    rowArr.map((cell, colIdx) =>
-                      cell !== null ? (
-                        <image
-                          key={`setup-piece-${rowIdx}-${colIdx}`}
-                          href={PLAYER_IMAGES[cell]}
-                          x={colIdx * BOARD_DIM + BOARD_DIM * 0.1}
-                          y={rowIdx * BOARD_DIM + BOARD_DIM * 0.1}
-                          width={BOARD_DIM * 0.8}
-                          height={BOARD_DIM * 0.8}
-                          style={{
-                            pointerEvents: "none",
-                            userSelect: "none"
-                          }}
-                          draggable={false}
-                        />
-                      ) : null
-                    )
-                  )}
-
-                  {/* Highlight available cells for current player */}
-                  {board.map((rowArr, rowIdx) =>
-                    rowArr.map((cell, colIdx) =>
-                      cell === null && setupTokens[setupTurn] > 0 ? (
-                        <rect
-                          key={`setup-spot-${rowIdx}-${colIdx}`}
-                          x={colIdx * BOARD_DIM}
-                          y={rowIdx * BOARD_DIM}
-                          width={BOARD_DIM}
-                          height={BOARD_DIM}
-                          fill="#9a695e"
-                          opacity={0}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => {
-                            if (cell !== null || setupTokens[setupTurn] === 0) return;
-                            // Place token for current setupTurn
-                            const new_board = board.map(r => r.slice());
-                            new_board[rowIdx][colIdx] = setupTurn;
-                            setBoard(new_board);
-                            const newTokens = [...setupTokens];
-                            newTokens[setupTurn]--;
-                            setSetupTokens(newTokens);
-                            // Find next player with tokens
-                            let next = setupTurn;
-                            let dir = setupDirection;
-                            let found = false;
-                            for (let i = 0; i < numPlayers; i++) {
-                              next += dir;
-                              if (next < 0) { next = 0; dir = 1; }
-                              if (next >= numPlayers) { next = numPlayers - 1; dir = -1; }
-                              if (newTokens[next] > 0) { found = true; break; }
-                            }
-                            if (found) {
-                              setSetupTurn(next);
-                              setSetupDirection(dir);
-                            }
-                          }}
-                        />
-                      ) : null
-                    )
-                  )}
-                </svg>
-              </div>
+                {/* Highlight available cells for current player */}
+                {board.map((rowArr, rowIdx) =>
+                  rowArr.map((cell, colIdx) =>
+                    cell === null && setupTokens[setupTurn] > 0 ? (
+                      <rect
+                        key={`setup-spot-${rowIdx}-${colIdx}`}
+                        x={colIdx}
+                        y={rowIdx}
+                        width={1}
+                        height={1}
+                        fill="#9a695e"
+                        opacity={0}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          if (cell !== null || setupTokens[setupTurn] === 0) return;
+                          // Place token for current setupTurn
+                          const new_board = board.map(r => r.slice());
+                          new_board[rowIdx][colIdx] = setupTurn;
+                          setBoard(new_board);
+                          const newTokens = [...setupTokens];
+                          newTokens[setupTurn]--;
+                          setSetupTokens(newTokens);
+                          // Find next player with tokens
+                          let next = setupTurn;
+                          let dir = setupDirection;
+                          let found = false;
+                          for (let i = 0; i < numPlayers; i++) {
+                            next += dir;
+                            if (next < 0) { next = 0; dir = 1; }
+                            if (next >= numPlayers) { next = numPlayers - 1; dir = -1; }
+                            if (newTokens[next] > 0) { found = true; break; }
+                          }
+                          if (found) {
+                            setSetupTurn(next);
+                            setSetupDirection(dir);
+                          }
+                        }}
+                      />
+                    ) : null
+                  )
+                )}
+              </svg>
             </div>
           </div>
           {/* Tokens left per player - now directly under the board */}
@@ -486,16 +445,10 @@ function App() {
     );
   }
 
-  // --- Main phase UI (styled to match setup phase) ---
+  // Main phase
+  const size = parseInt(boardSize, 10) || 7;
   return (
-    <main
-      className="container"
-      style={{
-        background: phase === "main" ? "#e0e0e0" : undefined,
-        minHeight: "100vh",
-        paddingBottom: 32,
-      }}
-    >
+    <main className="container">
       <h1>Wall Go</h1>
       {loading ? (
         <div>Loading...</div>
@@ -547,43 +500,12 @@ function App() {
             }}
           >
             {/* Board */}
-            <div
-              style={{
-                display: "inline-block",
-                border: "2px solid #333",
-                background: "#fff",
-                marginBottom: 16,
-                position: "relative",
-                minWidth: boardSize * BOARD_DIM,
-                maxWidth: boardSize * BOARD_DIM,
-                minHeight: boardSize * BOARD_DIM, // <-- Add this
-                maxHeight: boardSize * BOARD_DIM, // <-- And this
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                borderRadius: 8,
-              }}
-            >
-              {/* Background image */}
-              <img
-                src="/playing_board.png" // or your image URL
-                alt="background"
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  width: boardSize * BOARD_DIM,
-                  height: boardSize * BOARD_DIM,
-                  objectFit: "cover",
-                  borderRadius: 8,
-                  zIndex: 0,
-                  pointerEvents: "none",
-                  userSelect: "none",
-                }}
-                draggable={false}
-              />
+            <div className="board-container">
               <svg
-                width={boardSize * BOARD_DIM}
-                height={boardSize * BOARD_DIM}
-                style={{ display: "block", position: "relative", zIndex: 1 }}
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${size} ${size}`}
+                style={svgStyle}
                 onContextMenu={e => {
                   if (
                     movePath.length === 1 &&
@@ -602,10 +524,10 @@ function App() {
                       <image
                         key={`cell-bg-${rowIdx}-${colIdx}`}
                         href="/boardcell.png"
-                        x={colIdx * BOARD_DIM}
-                        y={rowIdx * BOARD_DIM}
-                        width={BOARD_DIM}
-                        height={BOARD_DIM}
+                        x={colIdx}
+                        y={rowIdx}
+                        width={1}
+                        height={1}
                         style={{
                           pointerEvents: "none",
                           userSelect: "none"
@@ -622,10 +544,10 @@ function App() {
                     {validMoves.map(({ row: r, col: c }) => (
                       <rect
                         key={`valid-move-highlight-${r}-${c}`}
-                        x={c * BOARD_DIM}
-                        y={r * BOARD_DIM}
-                        width={BOARD_DIM}
-                        height={BOARD_DIM}
+                        x={c}
+                        y={r}
+                        width={1}
+                        height={1}
                         fill="#ffe066"
                         opacity={0.5}
                         style={{ pointerEvents: "none" }}
@@ -641,10 +563,10 @@ function App() {
                       <image
                         key={`piece-${rowIdx}-${colIdx}`}
                         href={PLAYER_IMAGES[cell]}
-                        x={colIdx * BOARD_DIM + BOARD_DIM * 0.1}
-                        y={rowIdx * BOARD_DIM + BOARD_DIM * 0.1}
-                        width={BOARD_DIM * 0.8}
-                        height={BOARD_DIM * 0.8}
+                        x={colIdx + 0.1}
+                        y={rowIdx + 0.1}
+                        width={0.8}
+                        height={0.8}
                         className={
                           !wallPending &&
                           phase === "main" &&
@@ -696,10 +618,10 @@ function App() {
                     {validMoves.map(({ row: r, col: c }) => (
                       <rect
                         key={`valid-move-clickable-${r}-${c}`}
-                        x={c * BOARD_DIM}
-                        y={r * BOARD_DIM}
-                        width={BOARD_DIM}
-                        height={BOARD_DIM}
+                        x={c}
+                        y={r}
+                        width={1}
+                        height={1}
                         fill="transparent"
                         style={{ cursor: "pointer" }}
                         onClick={() => {
@@ -724,10 +646,10 @@ function App() {
                   <image
                     key={`h-${r}-${c}-${i}`}
                     href={WALL_IMAGES_H[player]}
-                    x={c * BOARD_DIM}
-                    y={(r + 1) * BOARD_DIM - 8} // Adjust -8 for vertical centering if needed
-                    width={BOARD_DIM}
-                    height={16} // Adjust height to match your PNG
+                    x={c}
+                    y={r + 1 - 0.12}
+                    width={1}
+                    height={0.23}
                     style={{
                       pointerEvents: "none",
                       userSelect: "none"
@@ -739,10 +661,10 @@ function App() {
                   <image
                     key={`v-${r}-${c}-${i}`}
                     href={WALL_IMAGES_V[player]}
-                    x={(c + 1) * BOARD_DIM - 8} // Adjust -8 for horizontal centering if needed
-                    y={r * BOARD_DIM}
-                    width={20} // Adjust width to match your PNG
-                    height={BOARD_DIM}
+                    x={c + 1 - 0.14}
+                    y={r}
+                    width={0.28}
+                    height={1}
                     style={{
                       pointerEvents: "none",
                       userSelect: "none"
@@ -751,11 +673,11 @@ function App() {
                   />
                 ))}
 
-                {/* Draw wall selectors */}
+                {/* Pending wall selectors */}
                 {wallPending &&
-                  Array.from({ length: boardSize - 1 }).map((_, r) =>
-                    Array.from({ length: boardSize }).map((_, c) => {
-                      if (r >= boardSize - 1) return null; // Prevent South edge
+                  Array.from({ length: size - 1 }).map((_, r) =>
+                    Array.from({ length: size }).map((_, c) => {
+                      if (r >= size - 1) return null;
                       if (wallsH.some(([hr, hc, _]) => hr === r && hc === c)) return null;
                       const last = lastMoved;
                       if (
@@ -769,13 +691,13 @@ function App() {
                       return (
                         <rect
                           key={`hwall-sel-${r}-${c}`}
-                          x={c * BOARD_DIM}
-                          y={(r + 1) * BOARD_DIM - 2}
-                          width={BOARD_DIM}
-                          height={4}
+                          x={c}
+                          y={r + 1 - 0.057}
+                          width={1}
+                          height={0.11}
                           fill="#ffb347"
                           opacity={0.6}
-                          rx={1}
+                          rx={0.02}
                           style={{ cursor: "pointer" }}
                           onClick={() => handleWallPlace("h", r, c)}
                         />
@@ -799,13 +721,13 @@ function App() {
                       return (
                         <rect
                           key={`vwall-sel-${r}-${c}`}
-                          x={(c + 1) * BOARD_DIM - 2}
-                          y={r * BOARD_DIM}
-                          width={4}
-                          height={BOARD_DIM}
+                          x={c + 1 - 0.057}
+                          y={r}
+                          width={0.11}
+                          height={1}
                           fill="#ffb347"
                           opacity={0.4}
-                          rx={1}
+                          rx={0.02}
                           style={{ cursor: "pointer" }}
                           onClick={() => handleWallPlace("v", r, c)}
                         />
