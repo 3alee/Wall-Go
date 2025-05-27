@@ -321,6 +321,30 @@ function App() {
           <div style={{ marginBottom: 0 }}>
             Current Player: <span style={{ color: PLAYER_COLORS[setupTurn], fontWeight: "bold" }}>{PLAYER_NAMES[setupTurn]}</span>
           </div>
+          {/* Tokens left per player - now directly under the board */}
+          <div style={{ marginTop: 16 }}>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              <div style={{
+                  marginTop: 0,
+                  display: "inline-block",
+                  marginRight: "16px",
+                }}
+                >Tokens Left:</div>
+              {PLAYER_NAMES.slice(0, numPlayers).map((name, idx) => (
+                <li
+                  key={name}
+                  style={{
+                    color: PLAYER_COLORS[idx],
+                    fontWeight: "bold",
+                    display: "inline-block",
+                    marginRight: "16px",
+                  }}
+                >
+                  {name}: {setupTokens[idx]}
+                </li>
+              ))}
+            </ul>
+          </div>
           <div
             style={{
               display: "flex",
@@ -364,10 +388,10 @@ function App() {
                       <image
                         key={`setup-piece-${rowIdx}-${colIdx}`}
                         href={PLAYER_IMAGES[cell]}
-                        x={colIdx + 0.1}
-                        y={rowIdx + 0.1}
-                        width={0.8}
-                        height={0.8}
+                        x={colIdx + 0.15}
+                        y={rowIdx + 0.15}
+                        width={0.7}
+                        height={0.7}
                         style={{
                           pointerEvents: "none",
                           userSelect: "none"
@@ -422,24 +446,10 @@ function App() {
               </svg>
             </div>
           </div>
-          {/* Tokens left per player - now directly under the board */}
-          <div style={{ marginTop: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Tokens Left</h3>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {PLAYER_NAMES.slice(0, numPlayers).map((name, idx) => (
-                <li
-                  key={name}
-                  style={{
-                    color: PLAYER_COLORS[idx],
-                    fontWeight: "bold",
-                    marginBottom: 8,
-                  }}
-                >
-                  {name}: {setupTokens[idx]}
-                </li>
-              ))}
-            </ul>
-          </div>
+        </div>
+        {/* Reset Button */}
+        <div style={{ marginBottom: 24 }}>
+          <button onClick={handleReset}>Reset Game</button>
         </div>
       </main>
     );
@@ -482,6 +492,37 @@ function App() {
               </span>
             )}
           </div>
+          {/* Final Scores Panel */}
+          {winner !== null && (
+            <div
+              style={{
+                width: "90vmin",
+                display: "inline-block",
+                background: "#fff",
+                border: "2px solid #333",
+                borderRadius: 8,
+                padding: "16px 20px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                marginLeft: 0,
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>Final Scores</h3>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {PLAYER_NAMES.slice(0, numPlayers).map((name, idx) => (
+                  <li
+                    key={name}
+                    style={{
+                      color: PLAYER_COLORS[idx],
+                      fontWeight: "bold",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {name}: {regionScores[idx] ?? 0}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div style={{ margin: "12px 0", fontWeight: "bold", fontSize: 18 }}>
             {winner !== null ? null :
               wallPending ? "Place a wall" :
@@ -563,10 +604,10 @@ function App() {
                       <image
                         key={`piece-${rowIdx}-${colIdx}`}
                         href={PLAYER_IMAGES[cell]}
-                        x={colIdx + 0.1}
-                        y={rowIdx + 0.1}
-                        width={0.8}
-                        height={0.8}
+                        x={colIdx + 0.15}
+                        y={rowIdx + 0.15}
+                        width={0.7}
+                        height={0.7}
                         className={
                           !wallPending &&
                           phase === "main" &&
@@ -736,36 +777,6 @@ function App() {
                   )}
               </svg>
             </div>
-            {/* Final Scores Panel */}
-            {winner !== null && (
-              <div
-                style={{
-                  minWidth: 180,
-                  background: "#fff",
-                  border: "2px solid #333",
-                  borderRadius: 8,
-                  padding: "16px 20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                  marginLeft: 0,
-                }}
-              >
-                <h3 style={{ marginTop: 0 }}>Final Scores</h3>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {PLAYER_NAMES.slice(0, numPlayers).map((name, idx) => (
-                    <li
-                      key={name}
-                      style={{
-                        color: PLAYER_COLORS[idx],
-                        fontWeight: "bold",
-                        marginBottom: 8,
-                      }}
-                    >
-                      {name}: {regionScores[idx] ?? 0}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
           {/* Reset Button */}
           <div style={{ marginBottom: 24 }}>
