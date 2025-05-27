@@ -1,8 +1,20 @@
-# Wall-Go
+# Wall-Go-WASM
 
-Season 2 of the South Korean reality game show "Devil's Plan" introduced a simple variation on the game Go, aptly named **Wall Go**. For fans out there who interested in trying out the game for themselves, I developed a quick **cross-platform app** using Tauri, which is **downloadable** for MacOS, Linus and Windows. I have personally tested out the MacOS and Windows builds, though the Linux one should work regardless.
+Season 2 of the South Korean reality game show "Devil's Plan" introduced a simple variation on the game Go, aptly named **Wall Go**. For fans out there who are interested in trying out the game for themselves, I developed a quick **playable online version** using React, Rust and WASM.
 
-If you'd prefer a **playable online version**, I've also created one too: <https://3alee.github.io/wall-go-wasm/>
+If you'd prefer a **cross-platform app** using Tauri, I've created one which is **downloadable** for MacOS, Linus and Windows. I have personally tested out the MacOS and Windows builds, though the Linux one should work regardless: <https://github.com/3alee/Wall-Go/releases>
+
+Season 2 of the South Korean reality game show "Devil's Plan" introduced a simple variation on the game Go, aptly named **Wall Go**. For fans out there who are interested in trying out the game for themselves, I have developed both a **playable online version**, and a **downloadable cross-platform app**.
+
+The **desktop app** I've created was made using React, Rust and Tauri, and is downloadable for MacOS, Linus and Windows. I
+have personally tested out the MacOS and Windows builds, though the Linux one should work regardless.
+
+The **online version** is a WebAssembly port of the same Rust code, and should work on any modern browser.
+
+- (Online version) <https://3alee.github.io/wall-go-wasm>
+- (App version) <https://github.com/3alee/Wall-Go/releases>
+
+---
 
 ## Gameplay
 
