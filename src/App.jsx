@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import BouncingImages from "./BouncingImages";
 
 // Remove the fixed BOARD_SIZE
 // const BOARD_SIZE = 7;
@@ -39,7 +40,10 @@ function App() {
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [winner, setWinner] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showSetupOptions, setShowSetupOptions] = useState(true);
+  const [showSetupOptions, setShowSetupOptions] = useState(false);
+  const [showHomepage, setShowHomepage] = useState(true);
+  const [showRules, setShowRules] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [setup, setSetup] = useState(false);
   const [tokens, setTokens] = useState(getDefaultTokens(2, 2));
   const [setupTokens, setSetupTokens] = useState(getDefaultTokens(2, 2));
@@ -180,7 +184,9 @@ function App() {
   async function handleReset() {
     const state = await invoke("reset_game");
     setFromBackend(state);
-    setShowSetupOptions(true);
+    setShowHomepage(true);
+    setShowRules(false);
+    setShowAbout(false);
     setSetup(false);
     setSetupTransitioned(false);
   }
@@ -215,10 +221,273 @@ function App() {
     background: "#fff"
   };
 
+  function handleHomepagePlay(e) {
+    e.preventDefault();
+    setShowSetupOptions(true);
+    setShowHomepage(false);
+  }
+
+  function handleHomepageRules(e) {
+    e.preventDefault();
+    setShowRules(true);
+    setShowHomepage(false);
+  }
+
+  function handleHomepageAbout(e) {
+    e.preventDefault();
+    setShowAbout(true);
+    setShowHomepage(false);
+  }
+
+  // In the setup options form:
+  if (showHomepage) {
+    return (
+      <main className="container">
+        <BouncingImages />
+        <div
+          style={{
+            position: "absolute",
+            backgroundColor: "rgba(255, 255, 255, 0)", // semi-transparent black
+            padding: "12px 20px",
+            borderRadius: "40px",
+            color: "black",
+            zIndex: 10, // higher than bouncing images
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <h1
+            style={{
+              marginTop: "clamp(3rem, 10vh, 4rem)",
+              fontSize: "clamp(1.5rem, 8vh, 5rem)",
+            }}
+          >
+            Wall Go
+          </h1>
+
+          <form
+            onSubmit={handleHomepagePlay}
+            style={{
+              width: "clamp(5rem, 15vw, 10rem)",
+              height: "10vh",
+              marginTop: "clamp(2.7rem, 5vh, 4rem)",
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              borderRadius: "8px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: "clamp(1rem, 3vh, 10rem)"
+              }}
+            >
+              Play
+            </button>
+          </form>
+
+          <form
+            onSubmit={handleHomepageRules}
+            style={{
+              width: "clamp(5rem, 15vw, 10rem)",
+              height: "10vh",
+              marginTop: "clamp(2.7rem, 1vh, 4rem)",
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              borderRadius: "8px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: "clamp(1rem, 3vh, 10rem)"
+              }}
+            >
+              Rules
+            </button>
+          </form>
+
+          <form
+            onSubmit={handleHomepageAbout}
+            style={{
+              width: "clamp(5rem, 15vw, 10rem)",
+              height: "10vh",
+              marginTop: "clamp(2.7rem, 5vh, 4rem)",
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              borderRadius: "8px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: "clamp(1rem, 3vh, 10rem)"
+              }}
+            >
+              About
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
+  // Rules page
+  if (showRules) {
+    return (
+      <main className="container">
+        <BouncingImages />
+        <div
+          style={{
+            position: "absolute",
+            backgroundColor: "rgba(255, 255, 255, 0)", // semi-transparent black
+            padding: "12px 20px",
+            borderRadius: "40px",
+            color: "black",
+            fontSize: "1rem",
+            zIndex: 10, // higher than bouncing images
+            // width: "50vw",
+            // height: "80vh",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <h1
+            style={{
+              marginTop: "clamp(3rem, 10vh, 4rem)",
+              fontSize: "clamp(1.5rem, 8vh, 5rem)",
+            }}
+          >
+            Rules
+          </h1>
+
+          <form
+            onSubmit={handleReset}
+            style={{
+              width: "clamp(5rem, 15vw, 10rem)",
+              height: "10vh",
+              marginTop: "clamp(2.7rem, 5vh, 4rem)",
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              borderRadius: "8px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: "clamp(1rem, 3vh, 10rem)"
+              }}
+            >
+              RULES ARE THESE:
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
+  // About page
+  if (showAbout) {
+    return (
+      <main className="container">
+        <BouncingImages />
+        <form
+            onSubmit={handleReset}
+            style={{
+              width: "clamp(5rem, 15vw, 10rem)",
+              height: "10vh",
+              // marginTop: "clamp(2.7rem, 5vh, 4rem)",
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              borderRadius: "8px",
+              top: "0vh",
+              left: "2vw",
+              zIndex: 20,
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "12px",
+                fontSize: "clamp(1rem, 3vh, 10rem)",
+
+              }}
+            >
+              Back
+            </button>
+          </form>
+        <div
+          style={{
+            position: "absolute",
+            backgroundColor: "rgba(255, 255, 255, 0)", // semi-transparent black
+            padding: "12px 20px",
+            borderRadius: "40px",
+            color: "black",
+            fontSize: "1rem",
+            zIndex: 10, // higher than bouncing images
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            // justifyContent: "center",
+          }}
+        >
+          <h1
+            style={{
+              marginTop: "clamp(3rem, 10vh, 20rem)",
+              fontSize: "clamp(1.5rem, 8vh, 5rem)",
+            }}
+          >
+            About
+          </h1>
+          <p
+            style={{
+              width: "80vw",
+              height: "60vh",
+              // marginTop: "clamp(2.7rem, 5vh, 4rem)",
+              backgroundColor: "rgba(255, 255, 255, 1)",
+              borderRadius: "8px",
+              top: "0vh",
+              left: "2vw",
+              zIndex: 20,
+            }}
+          >
+            Wall Go is a strategic board game for 2-4 players. The objective is to control the most territory by placing pieces and walls on the board.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   // In the setup options form:
   if (showSetupOptions) {
     return (
       <main className="container">
+        <BouncingImages />
         <h1>Wall Go Setup Options</h1>
         <form onSubmit={handleSetupOptionsSubmit} style={{ maxWidth: 400, margin: "0 auto" }}>
           <div style={{ marginBottom: 16 }}>
@@ -315,6 +584,7 @@ function App() {
     }
     return (
       <main className="container">
+        <BouncingImages />
         <h1>Wall Go Setup</h1>
         <div style={{ marginTop: 0 }}>
           <h2>Setup Phase</h2>
@@ -459,6 +729,7 @@ function App() {
   const size = parseInt(boardSize, 10) || 7;
   return (
     <main className="container">
+      <BouncingImages />
       <h1>Wall Go</h1>
       {loading ? (
         <div>Loading...</div>
