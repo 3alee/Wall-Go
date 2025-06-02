@@ -1,0 +1,46 @@
+export type GameOptions = {
+    boardSize: number;
+    piecesPerPlayer: number;
+    numPlayers: number;
+};
+
+export type SetupState = {
+    pieces: number[];
+    direction: number;
+};
+
+export type Piece = {
+  player: number;
+  id: string; // unique UUID or generated at game setup
+};
+
+export type BoardCell = Piece | null;
+
+export type GameState = {
+    board: (BoardCell | null)[][];
+    board_size: number;
+    current_player: number;
+    winner: number | null;
+    walls_h: [number, number, number][];
+    walls_v: [number, number, number][];
+    phase: "Setup" | "Main" | string; // Use a union type or `string` if uncertain
+    move_path: Coord[];
+    wall_pending: boolean;
+    num_players: number;
+    pieces_per_player: number;
+};
+
+export type SetupAndGameState = {
+  setup_state: SetupState;
+  game_state: GameState;
+};
+
+export type GameData = {
+    selectablePieces: Record<string, boolean>;
+	validMoves: Coord[];
+	validMovesSource: Coord | null;
+	regionScores: number[];
+	lastMoved: Coord | null;
+};
+
+export type Coord = { row: number; col: number };

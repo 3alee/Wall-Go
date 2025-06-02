@@ -1,6 +1,12 @@
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Piece {
+    pub id: String,       // unique identifier, e.g. "p1-0"
+    pub player: usize,    // player number
+}
+
 #[tauri::command]
 fn set_board_and_player(
-    new_board: Vec<Vec<Option<usize>>>,
+    new_board: Vec<Vec<Option<Piece>>>,
     current_player: usize,
     num_players: usize,
     pieces_per_player: usize,
@@ -28,8 +34,9 @@ fn set_board_and_player(
     game.pieces_per_player = pieces_per_player;
     game.clone()
 }
+
 #[tauri::command]
-fn set_board(new_board: Vec<Vec<Option<usize>>>, state: State<SharedGameState>) -> GameState {
+fn set_board(new_board: Vec<Vec<Option<Piece>>>, state: State<SharedGameState>) -> GameState {
     let mut game = state.lock().unwrap();
     // Replace the board entirely
     if new_board.len() == game.board_size && new_board.iter().all(|row| row.len() == game.board_size) {
@@ -37,6 +44,7 @@ fn set_board(new_board: Vec<Vec<Option<usize>>>, state: State<SharedGameState>) 
     }
     game.clone()
 }
+
 #[tauri::command]
 fn start_main_phase(state: State<SharedGameState>) -> GameState {
     let mut game = state.lock().unwrap();
@@ -47,12 +55,12 @@ fn start_main_phase(state: State<SharedGameState>) -> GameState {
 }
 
 use serde::{Serialize, Deserialize};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::State;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
-    pub board: Vec<Vec<Option<usize>>>, // None = empty, Some(player_idx)
+    pub board: Vec<Vec<Option<Piece>>>, // None = empty, Some(player_idx)
     pub board_size: usize, // <--- add this
     pub current_player: usize,
     pub winner: Option<usize>,
@@ -90,13 +98,55 @@ impl Default for GameState {
     }
 }
 
-type SharedGameState = Mutex<GameState>;
-
-#[tauri::command]
-fn get_game_state(state: State<SharedGameState>) -> GameState {
-    state.lock().unwrap().clone()
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetupState {
+    pub pieces: Vec<usize>,
+    pub direction: isize,
 }
 
+type SharedGameState = Arc<Mutex<GameState>>;
+type SharedSetupState = Arc<Mutex<SetupState>>;
+
+#[tauri::command]
+fn get_game_state(game_state: State<SharedGameState>) -> GameState {
+    game_state.lock().unwrap().clone()
+}
+
+#[tauri::command]
+fn get_setup_state(setup_state: State<SharedSetupState>) -> SetupState {
+    let setup = setup_state.lock().unwrap();
+    println!("[Rust] get_setup_state returns: {:?}", *setup);
+    let addr = Arc::as_ptr(&setup_state) as usize;
+    println!("set_setup accessing SetupState at {:p}", addr as *const ());
+    setup.clone()
+}
+
+impl Default for SetupState {
+    fn default() -> Self {
+        Self {
+            pieces: vec![],
+            direction: 0,     // default to 2
+        }
+    }
+}
+
+#[tauri::command]
+fn set_setup(
+    pieces: Vec<usize>,
+    direction: isize, // <-- add this parameter
+    setup_state: State<SharedSetupState>
+) -> SetupState {
+    
+    let mut setup = setup_state.lock().unwrap();
+    println!("[Rust] Before set_setup: {:?}", *setup);
+
+    setup.pieces = pieces;
+    setup.direction = direction;
+    println!("[Rust] After set_setup: {:?}", *setup);
+    let addr = Arc::as_ptr(&setup_state) as usize;
+    println!("set_setup accessing SetupState at {:p}", addr as *const ());
+    setup.clone()
+}
 
 // Helper: check if a move is blocked by a wall
 fn is_blocked(a: (usize, usize), b: (usize, usize), game: &GameState) -> bool {
@@ -120,9 +170,13 @@ fn is_valid_move_path(game: &GameState, path: &[(usize, usize)]) -> bool {
     if path.len() == 1 {
         let (row, col) = path[0];
         // Only allow if the piece belongs to the current player
-        if game.board[row][col] != Some(game.current_player) {
-            return false;
-        }
+        // if game.board[row][col] != Some(game.current_player) {
+        //     return false;
+        // }
+        match game.board[row][col] {
+            Some(ref p) if p.player == game.current_player => p,
+            _ => return false,
+        };
         // Check if at least one adjacent cell is NOT blocked by a wall
         let neighbors = [
             (row.wrapping_sub(1), col),
@@ -145,7 +199,11 @@ fn is_valid_move_path(game: &GameState, path: &[(usize, usize)]) -> bool {
     let start = path[0];
     let end = path[path.len() - 1];
     // Must start on a piece belonging to the current player
-    if game.board[start.0][start.1] != Some(game.current_player) { return false; }
+    // if game.board[start.0][start.1] != Some(game.current_player) { return false; }
+    match game.board[start.0][start.1] {
+        Some(ref p) if p.player == game.current_player => p,
+        _ => return false,
+    };
     // End must be empty or the start (for return-to-start)
     if game.board[end.0][end.1].is_some() && end != start { return false; }
     // Allow revisiting any cell, but not passing through other pieces (except possibly the end)
@@ -183,9 +241,13 @@ fn is_valid_move_path(game: &GameState, path: &[(usize, usize)]) -> bool {
 fn has_valid_moves(row: usize, col: usize, state: State<SharedGameState>) -> bool {
     let game = state.lock().unwrap();
     // Only check if this is the current player's piece
-    if game.board[row][col] != Some(game.current_player) {
-        return false;
-    }
+    // if game.board[row][col] != Some(game.current_player) {
+    //     return false;
+    // }
+    match game.board[row][col] {
+        Some(ref p) if p.player == game.current_player => p,
+        _ => return false,
+    };
     // Allow 0-length move (stay in place)
     if is_valid_move_path(&game, &[(row, col)]) {
         return true;
@@ -210,9 +272,13 @@ fn move_piece(path: Vec<(usize, usize)>, state: State<SharedGameState>) -> GameS
     let end = path[path.len() - 1];
 
     // Only move the piece if start != end
+    // if start != end {
+    //     game.board[start.0][start.1] = None;
+    //     game.board[end.0][end.1] = Some(game.current_player);
+    // }
     if start != end {
-        game.board[start.0][start.1] = None;
-        game.board[end.0][end.1] = Some(game.current_player);
+        let original_piece = game.board[start.0][start.1].take().unwrap(); // take ownership of the piece
+        game.board[end.0][end.1] = Some(original_piece);
     }
     game.move_path = path;
     game.wall_pending = true;
@@ -293,13 +359,24 @@ fn reset_game(state: State<SharedGameState>) -> GameState {
 }
 
 #[tauri::command]
+fn reset_setup(state: State<SharedSetupState>) -> SetupState {
+    let mut setup = state.lock().unwrap();
+    *setup = SetupState::default();
+    setup.clone()
+}
+
+#[tauri::command]
 fn get_valid_moves_for_piece(row: usize, col: usize, state: State<SharedGameState>) -> Vec<(usize, usize)> {
     let game = state.lock().unwrap();
     let mut moves = Vec::new();
     // Only check if this is the current player's piece
-    if game.board[row][col] != Some(game.current_player) {
-        return moves;
-    }
+    // if game.board[row][col] != Some(game.current_player) {
+    //     return moves;
+    // }
+    match game.board[row][col] {
+        Some(ref p) if p.player == game.current_player => p,
+        _ => return moves,
+    };
     // Add 0-length move (stay in place)
     if is_valid_move_path(&game, &[(row, col)]) {
         moves.push((row, col));
@@ -364,8 +441,9 @@ fn get_region_scores(state: State<SharedGameState>) -> Vec<usize> {
             visited[r][c] = true;
             while let Some((rr, cc)) = queue.pop_front() {
                 region.push((rr, cc));
-                if let Some(player) = game.board[rr][cc] {
-                    region_players.insert(player);
+                
+                if let Some(ref piece) = game.board[rr][cc] {
+                    region_players.insert(piece.player); // use .player field
                 }
                 let neighbors = [
                     (rr.wrapping_sub(1), cc),
@@ -388,14 +466,17 @@ fn get_region_scores(state: State<SharedGameState>) -> Vec<usize> {
                 }
             }
             // If region contains only one player's pieces (or is empty), attribute score
-            if region_players.len() == 1 && !region_players.is_empty() {
+            if region_players.len() == 1 {
                 let player = *region_players.iter().next().unwrap();
                 scores[player] += region.len();
             }
         }
     }
+
     scores
 }
+
+
 fn all_pieces_isolated(game: &GameState) -> bool {
     let mut visited = vec![vec![false; game.board_size]; game.board_size];
     for r in 0..game.board_size {
@@ -410,8 +491,12 @@ fn all_pieces_isolated(game: &GameState) -> bool {
             visited[r][c] = true;
             let mut has_piece = false;
             while let Some((rr, cc)) = queue.pop_front() {
-                if let Some(player) = game.board[rr][cc] {
-                    region_players.insert(player);
+                // if let Some(player) = game.board[rr][cc] {
+                //     region_players.insert(player);
+                //     has_piece = true;
+                // }
+                if let Some(ref piece) = game.board[rr][cc] {
+                    region_players.insert(piece.player);
                     has_piece = true;
                 }
                 let neighbors = [
@@ -443,12 +528,85 @@ fn all_pieces_isolated(game: &GameState) -> bool {
     true
 }
 
+#[derive(Serialize)]
+pub struct SetupAndGameState {
+    pub setup_state: SetupState,
+    pub game_state: GameState,
+}
+
+#[tauri::command]
+fn handle_setup_move(
+    row_idx: usize,
+    col_idx: usize,
+    game_state: State<SharedGameState>,
+    setup_state: State<SharedSetupState>,
+) -> SetupAndGameState {
+    let mut game = game_state.lock().unwrap();
+    let mut setup = setup_state.lock().unwrap();
+
+    // Check move validity
+    if game.board[row_idx][col_idx].is_some() || setup.pieces[game.current_player] == 0 {
+        return SetupAndGameState {
+            setup_state: setup.clone(),
+            game_state: game.clone(),
+        }
+    }
+
+    // Place piece
+    // game.board[row_idx][col_idx] = Some(game.current_player);
+    let new_piece = Piece {
+        id: format!("p{}-{}", game.current_player, setup.pieces[game.current_player]), // or however you define IDs
+        player: game.current_player,
+    };
+    println!("Placed {:?}", new_piece);
+    game.board[row_idx][col_idx] = Some(new_piece);
+
+    setup.pieces[game.current_player] -= 1;
+
+    // Determine next player and direction
+    let mut next_player = game.current_player as isize;
+    let mut direction = setup.direction;
+
+    let mut found = false;
+    for _ in 0..game.num_players {
+        // If next player is out of bounds, reverse direction
+        next_player += direction;
+        if next_player < 0 {
+            next_player = 0;
+            direction = 1;
+        }
+        // If next player is out of bounds, reverse direction
+        if next_player >= game.num_players as isize {
+            next_player = (game.num_players - 1) as isize;
+            direction = -1;
+        }
+        // If the next player has pieces left, place a piece
+        if setup.pieces[next_player as usize] > 0 {
+            found = true;
+            break;
+        }
+    }
+
+    // Update whose setup turn it is
+    if found {
+        game.current_player = next_player as usize;
+    }
+    // Update direction
+    setup.direction = direction;
+
+    SetupAndGameState {
+        setup_state: setup.clone(),
+        game_state: game.clone(),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(Mutex::new(GameState::default()))
-        .invoke_handler(tauri::generate_handler![next_player, get_game_state, can_place_adjacent_wall, get_valid_moves_for_piece, has_valid_moves, move_piece, place_wall, reset_game, start_main_phase, set_board, set_board_and_player, get_valid_moves_for_piece, get_region_scores])
+        .manage(Arc::new(Mutex::new(GameState::default())))
+        .manage(Arc::new(Mutex::new(SetupState::default())))
+        .invoke_handler(tauri::generate_handler![next_player, get_game_state, can_place_adjacent_wall, get_valid_moves_for_piece, has_valid_moves, move_piece, place_wall, reset_game, reset_setup, start_main_phase, set_board, set_board_and_player, get_valid_moves_for_piece, get_region_scores, handle_setup_move, get_setup_state, set_setup])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
