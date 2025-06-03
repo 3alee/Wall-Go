@@ -10,7 +10,7 @@ import GameHeader from "./GameHeader";
 function GamePhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
 	const [gameData, setGameData] = useState<GameData>({
 		selectablePieces: {},
-		validMoves: [],
+		validPaths: [],
 		validMovesSource: null,
 		regionScores: [],
 		lastMoved: null,
@@ -48,18 +48,18 @@ function GamePhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
 			const newSelectable = {};
 			const promises: Promise<void>[] = [];
 			for (let row = 0; row < game.board_size; row++) {
-			for (let col = 0; col < game.board_size; col++) {
-				if (game.board[row][col]?.player === game.current_player) {
-				// Check for valid moves
-				promises.push(
-					hasValidMoves(row, col).then(async (hasMoves) => {
-					if (hasMoves) {
-						newSelectable[`${row},${col}`] = true;
+				for (let col = 0; col < game.board_size; col++) {
+					if (game.board[row][col]?.player === game.current_player) {
+					// Check for valid moves
+					promises.push(
+						hasValidMoves({row: row, col: col}).then(async (hasMoves) => {
+						if (hasMoves) {
+							newSelectable[`${row},${col}`] = true;
+						}
+						})
+					);
 					}
-					})
-				);
 				}
-			}
 			}
 			await Promise.all(promises);
 			if (Object.values(newSelectable).every(val => val === false)) {
@@ -84,14 +84,14 @@ function GamePhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
 		const { row, col } = game.move_path[0];
 		setGameData(prev => ({ ...prev, validMovesSource: { row, col } }));
 		let cancelled = false;
-		getValidMovesForPiece(row, col).then((moves) => {
+		getValidMovesForPiece(game.move_path[0]).then((movePaths) => {
 			if (!cancelled) {
-				setGameData(prev => ({ ...prev, validMoves: moves }));
+				setGameData(prev => ({ ...prev, validPaths: movePaths }));
 			}
 		});
 		return () => { cancelled = true; };
 	} else {
-		setGameData(prev => ({ ...prev, validMoves: [], validMovesSource: null }));
+		setGameData(prev => ({ ...prev, validPaths: [], validMovesSource: null }));
 	}
 	// eslint-disable-next-line
   }, [game.move_path, game.board, game.walls_h, game.walls_v, game.wall_pending, game.phase, game.winner]);

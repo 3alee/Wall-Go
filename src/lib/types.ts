@@ -21,10 +21,10 @@ export type GameState = {
     board_size: number;
     current_player: number;
     winner: number | null;
-    walls_h: [number, number, number][];
-    walls_v: [number, number, number][];
+    walls_h: [Coord, number][];
+    walls_v: [Coord, number][];
     phase: "Setup" | "Main" | string; // Use a union type or `string` if uncertain
-    move_path: Coord[];
+    move_path: CoordPath;
     wall_pending: boolean;
     num_players: number;
     pieces_per_player: number;
@@ -37,10 +37,12 @@ export type SetupAndGameState = {
 
 export type GameData = {
     selectablePieces: Record<string, boolean>;
-	validMoves: Coord[];
+	validPaths: CoordPath[];
 	validMovesSource: Coord | null;
 	regionScores: number[];
 	lastMoved: Coord | null;
 };
 
 export type Coord = { row: number; col: number };
+
+export type CoordPath = Coord[];

@@ -6,12 +6,12 @@ export function WallsH({ game }:
         game: GameState }) {
     return (
         <>
-        {game.walls_h.map(([r, c, player], i) => (
+        {game.walls_h.map(([coord, player], i) => (
             <image
-                key={`h-${r}-${c}-${i}`}
+                key={`h-${coord.row}-${coord.col}-${i}`}
                 href={WALL_IMAGES_H[player]}
-                x={c}
-                y={r + 1 - 0.12}
+                x={coord.col}
+                y={coord.row + 1 - 0.12}
                 width={1}
                 height={0.23}
                 style={{
@@ -30,12 +30,12 @@ export function WallsV({ game }:
         game: GameState }) {
     return (
         <>
-        {game.walls_v.map(([r, c, player], i) => (
+        {game.walls_v.map(([coord, player], i) => (
             <image
-                key={`v-${r}-${c}-${i}`}
+                key={`v-${coord.row}-${coord.col}-${i}`}
                 href={WALL_IMAGES_V[player]}
-                x={c + 1 - 0.14}
-                y={r}
+                x={coord.col + 1 - 0.14}
+                y={coord.row}
                 width={0.28}
                 height={1}
                 style={{

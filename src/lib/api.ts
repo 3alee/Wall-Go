@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Coord, GameState, Piece, SetupAndGameState, SetupState } from "./types";
+import { Coord, CoordPath, GameState, Piece, SetupAndGameState, SetupState } from "./types";
 
 //----------------------------------------------------------------
 // Game Options Phase
@@ -50,8 +50,8 @@ export async function getGameState(): Promise<GameState> {
  * @param rowIdx - The row index of the clicked cell.
  * @param colIdx - The column index of the clicked cell.
  */
-export async function handleSetupMove(rowIdx: number, colIdx: number): Promise<SetupAndGameState> {
-    return await invoke<SetupAndGameState>("handle_setup_move", { rowIdx, colIdx });
+export async function handleSetupMove(coord: Coord): Promise<SetupAndGameState> {
+    return await invoke<SetupAndGameState>("handle_setup_move", { coord });
 }
 
 /**
@@ -65,25 +65,26 @@ export async function startMainPhase(): Promise<GameState> {
 // Main Phase
 
 // Check if a piece has valid moves
-export async function hasValidMoves(row: number, col: number): Promise<boolean> {
-    return await invoke<boolean>("has_valid_moves", { row, col });
+export async function hasValidMoves(coord: Coord): Promise<boolean> {
+    return await invoke<boolean>("has_valid_moves", { coord });
 }
 
 // Get valid moves for a piece
-export async function getValidMovesForPiece(row: number, col: number): Promise<Coord[]> {
-    const result = await invoke<[number, number][]>("get_valid_moves_for_piece", { row, col });
-    return result.map(([r, c]) => ({ row: r, col: c }));
+export async function getValidMovesForPiece(coord: Coord): Promise<CoordPath[]> {
+    return await invoke<CoordPath[]>("get_valid_moves_for_piece", { coord });
+    // return result;
 }
 
 // Move a piece along a given path
-export async function movePiece(path: Coord[]): Promise<GameState> {
-    const rustPath = path.map(({ row, col }) => [row, col]);
-    return await invoke<GameState>("move_piece", { path: rustPath });
+export async function movePiece(path: CoordPath): Promise<GameState> {
+    return await invoke<GameState>("move_piece", { path });
+    // const rustPath = path.map(({ row, col }) => [row, col]);
+    // return await invoke<GameState>("move_piece", { path: rustPath });
 }
 
 // Place a wall
-export async function placeWall(type: "h" | "v", row: number, col: number): Promise<GameState> {
-    return await invoke<GameState>("place_wall", { wallType: type, row, col });
+export async function placeWall(type: "h" | "v", coord: Coord): Promise<GameState> {
+    return await invoke<GameState>("place_wall", { wallType: type, coord: coord });
 }
 
 // Skip to next player if no valid moves

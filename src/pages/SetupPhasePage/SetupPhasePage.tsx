@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import BouncingImages from "../../components/BouncingImages";
 import "../../styles/App.css";
 import GamePhasePage from "../GamePhasePage/GamePhasePage";
-import { SetupState, GameState, SetupAndGameState } from "../../lib/types";
+import { SetupState, GameState, SetupAndGameState, Coord } from "../../lib/types";
 import BackButton from "../../components/BackButton";
 import SetupHeader from "./SetupHeader";
 import SetupBoard from "../../components/setupboard/SetupBoard";
@@ -41,8 +41,8 @@ function SetupPhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
         })()
     }, []);
 
-    async function onCellClick (rowIdx: number, colIdx: number) {
-        const setupandgame: SetupAndGameState = await handleSetupMove(rowIdx, colIdx);
+    async function onCellClick (coord: Coord) {
+        const setupandgame: SetupAndGameState = await handleSetupMove(coord);
         // Update frontend states with returned values
         setSetup(setupandgame.setup_state);
         setGame(setupandgame.game_state);

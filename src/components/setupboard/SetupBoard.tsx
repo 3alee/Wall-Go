@@ -1,4 +1,4 @@
-import { GameState, SetupState } from "../../lib/types";
+import { Coord, GameState, SetupState } from "../../lib/types";
 import BoardGrid from "../board/BoardGrid";
 import Pieces from "./SetupPieces";
 import PlacementLayer from "./PlacementLayer";
@@ -11,7 +11,7 @@ export default function SetupBoard(
     }: {
         game: GameState;
         setup: SetupState;
-        onCellClick: (row: number, col: number) => void;
+        onCellClick: (coord: Coord) => void;
     }) {
         const svgStyle = {
             display: "block",

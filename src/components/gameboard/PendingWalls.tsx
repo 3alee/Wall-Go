@@ -1,5 +1,4 @@
-import { GameData, GameState } from "../../lib/types";
-import { WALL_IMAGES_V } from "../../lib/Elements";
+import { Coord, GameData, GameState } from "../../lib/types";
 import { placeWall } from "../../lib/api";
 import { Dispatch, SetStateAction } from "react";
 
@@ -8,11 +7,11 @@ import { Dispatch, SetStateAction } from "react";
     game: GameState,
     setGame: Dispatch<SetStateAction<GameState>>,
     type: "h" | "v",
-    row: number, col: number) {
-        console.log(`Placing ${type} wall at (${row}, ${col})`);
+    coord: Coord) {
+        console.log(`Placing ${type} wall at (${coord.row}, ${coord.col})`);
         if (!game.wall_pending) return;
-        const state = await placeWall( type, row, col );
-        console.log(`Placed ${type} wall at (${row}, ${col})`);
+        const state = await placeWall( type, coord );
+        console.log(`Placed ${type} wall at (${coord.row}, ${coord.col})`);
         // setFromBackend(state);
         setGame(state);
   }
@@ -28,7 +27,7 @@ export function PendingWallsV({ game, setGame, gameData }:
             Array.from({ length: game.board_size }).map((_, r) =>
                 Array.from({ length: game.board_size - 1 }).map((_, c) => {
                 // If wall already exists, skip it
-                if (game.walls_v.some(([vr, vc, _]) => vr === r && vc === c)) return null;
+                if (game.walls_v.some(([coord, _]) => coord.row === r && coord.col === c)) return null;
                 const last = gameData.lastMoved;
                 //If not adjacent to most recently moved piece, ignore
                 if (
@@ -50,7 +49,7 @@ export function PendingWallsV({ game, setGame, gameData }:
                         opacity={0.4}
                         rx={0.02}
                         style={{ cursor: "pointer" }}
-                        onClick={() => handleWallPlace(game, setGame, "v", r, c)}
+                        onClick={() => handleWallPlace(game, setGame, "v", {row: r, col: c})}
                     />
                 );
             })
@@ -70,7 +69,7 @@ export function PendingWallsH({ game, setGame, gameData }:
             Array.from({ length: game.board_size - 1 }).map((_, r) =>
                 Array.from({ length: game.board_size }).map((_, c) => {
                 // If wall already exists, skip it
-                if (game.walls_h.some(([hr, hc, _]) => hr === r && hc === c)) return null;
+                if (game.walls_h.some(([coord, _]) => coord.row === r && coord.col === c)) return null;
                 const last = gameData.lastMoved;
                 //If not adjacent to most recently moved piece, ignore
                 if (
@@ -92,7 +91,7 @@ export function PendingWallsH({ game, setGame, gameData }:
                     opacity={0.6}
                     rx={0.02}
                     style={{ cursor: "pointer" }}
-                    onClick={() => handleWallPlace(game, setGame, "h", r, c)}
+                    onClick={() => handleWallPlace(game, setGame, "h", {row: r, col: c})}
                     />
                 );
                 })

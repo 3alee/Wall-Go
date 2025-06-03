@@ -1,4 +1,4 @@
-import { GameState, SetupState } from "../../lib/types";
+import { Coord, GameState, SetupState } from "../../lib/types";
 
 export default function PlacementLayer({
     game,
@@ -7,7 +7,7 @@ export default function PlacementLayer({
 }: {
     game: GameState;
     setup: SetupState;
-    onCellClick: (row: number, col: number) => void;
+    onCellClick: (coord: Coord) => void;
 }) {
     if (setup.pieces[game.current_player] === 0) return null;
 
@@ -25,7 +25,7 @@ export default function PlacementLayer({
                 fill="#9a695e"
                 opacity={0}
                 style={{ cursor: "pointer" }}
-                onClick={() => onCellClick(rowIdx, colIdx)}
+                onClick={() => onCellClick({row: rowIdx, col: colIdx})}
                 />
             ) : null
             )
