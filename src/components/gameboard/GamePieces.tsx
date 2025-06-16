@@ -12,7 +12,7 @@ export default function GamePieces(
         gameData,
     }: {
         game: GameState;
-        setGame: Dispatch<SetStateAction<GameState>>;
+        setGame: (game: GameState) => void | Promise<void>;
         gameData: GameData;
     }) {
     const prevPositionsRef = useRef<Map<string, Position>>(new Map());

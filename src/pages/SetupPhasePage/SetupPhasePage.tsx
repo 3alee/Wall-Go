@@ -2,19 +2,27 @@ import { useEffect, useState } from "react";
 import BouncingImages from "../../components/BouncingImages";
 import "../../styles/App.css";
 import GamePhasePage from "../GamePhasePage/GamePhasePage";
-import { SetupState, GameState, SetupAndGameState, Coord } from "../../lib/types";
+import { SetupState, GameState, SetupAndGameState, Coord, GameMode } from "../../lib/types";
 import BackButton from "../../components/BackButton";
 import SetupHeader from "./SetupHeader";
 import SetupBoard from "../../components/setupboard/SetupBoard";
 import { getGameState, getSetupState, handleSetupMove, startMainPhase } from "../../lib/api";
+import { useGameSync } from "../../multiplayer/useGameSync";
 
-function SetupPhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {  
+type Props = {
+    onBack: (e: React.FormEvent) => void;
+    gameMode: GameMode;
+    gameId?: string;
+};
+
+function SetupPhasePage({ onBack, gameMode, gameId }: Props) {
     const [setup, setSetup] = useState<SetupState>({
         pieces: [2, 2],
         direction: 1,
     });
 
-    const [game, setGame] = useState<GameState>({
+    // Local fallback state for useGameSync
+    const [localGame, setLocalGame] = useState<GameState>({
         board: [],
         board_size: 7,
         current_player: 0,
@@ -30,49 +38,63 @@ function SetupPhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
         game_id: undefined,
     });
 
-    useEffect(() => {
-        (async () => {
-            await new Promise((resolve) => setTimeout(resolve, 200));
-            const setupState = await getSetupState();
-            const gameState = await getGameState();
-            console.log("GETTING BOTH STATES");
-            setSetup(setupState);
-            setGame(gameState);
-            console.log(setupState);
-        })()
-    }, []);
+    // --- useGameSync handles local or multiplayer state ---
+    const { game, updateGame } = useGameSync(gameMode, localGame, setLocalGame, gameId);
 
-    async function onCellClick (coord: Coord) {
-        const setupandgame: SetupAndGameState = await handleSetupMove(coord);
-        // Update frontend states with returned values
-        setSetup(setupandgame.setup_state);
-        setGame(setupandgame.game_state);
-    };
-        
     useEffect(() => {
-        console.log("setup.pieces.length", setup.pieces.length);
-        if (setup.pieces.length === 0) return;
-
-        const totalPieces = setup.pieces.reduce((a, b) => a + b, 0);
-        console.log("Total Pieces", totalPieces);
-        if (totalPieces === 0) {
+        if (gameMode === "local") {
             (async () => {
-                console.log("TOTAL PIECES = 0")
-                const game: GameState = await startMainPhase();
-                setGame(game);
+                await new Promise((resolve) => setTimeout(resolve, 200));
+                const setupState = await getSetupState();
+                const gameState = await getGameState();
+                setSetup(setupState);
+                setLocalGame(gameState);
             })();
         }
-    }, [setup.pieces]);
-    
-    switch (game.phase) {
-        case "Main":
+        // Multiplayer handled by useGameSync
+        // eslint-disable-next-line
+    }, [gameMode, gameId]);
+
+    async function onCellClick(coord: Coord) {
+        if (gameMode === "local") {
+            const setupandgame: SetupAndGameState = await handleSetupMove(coord);
+            setSetup(setupandgame.setup_state);
+            setLocalGame(setupandgame.game_state);
+        } else {
+            // For multiplayer, you need to implement multiplayer setup move logic here.
+            // For now, just update the game state via updateGame if you have the logic.
+            // Example (pseudo):
+            // const newGame = { ...game, ...changesFromMove };
+            // await updateGame(newGame);
+            // You may also want to sync setup state via Firebase if needed.
+        }
+    }
+
+    useEffect(() => {
+        if (setup.pieces.length === 0) return;
+        const totalPieces = setup.pieces.reduce((a, b) => a + b, 0);
+        if (totalPieces === 0) {
+            (async () => {
+                if (gameMode === "local") {
+                    const game: GameState = await startMainPhase();
+                    setLocalGame(game);
+                } else {
+                    // For multiplayer, update the game phase to "Main" and sync via updateGame
+                    const next = { ...game, phase: "Main" };
+                    await updateGame(next);
+                }
+            })();
+        }
+    }, [setup.pieces, gameMode, game, updateGame]);
+
+    if (game.phase === "Main") {
         return (
             <GamePhasePage
                 onBack={onBack}
+                gameMode={gameMode}
+                gameId={gameId}
             />
         );
-        default:
-            break;
     }
 
     return (

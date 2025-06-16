@@ -1,7 +1,7 @@
 import BouncingImages from "../components/BouncingImages";
 import "../styles/App.css";
 
-function HomePage({ onPlay, onRules, onAbout }) {
+function HomePage({ onLocal, onMulti, onRules, onAbout }) {
     return (
         <main className="container">
             <BouncingImages />
@@ -22,7 +22,7 @@ function HomePage({ onPlay, onRules, onAbout }) {
                 </h1>
 
                 <form
-                    onSubmit={onPlay}
+                    onSubmit={onLocal}
                     style={{
                         width: "clamp(5rem, 15vw, 10rem)",
                         height: "10vh",
@@ -39,7 +39,29 @@ function HomePage({ onPlay, onRules, onAbout }) {
                         fontSize: "clamp(1rem, 3vh, 10rem)"
                     }}
                     >
-                        Play
+                        Local
+                    </button>
+                </form>
+
+                <form
+                    onSubmit={onMulti}
+                    style={{
+                        width: "clamp(8rem, 15vw, 16rem)",
+                        height: "10vh",
+                        marginTop: "clamp(2.7rem, 5vh, 4rem)",
+                        backgroundColor: "rgba(0, 0, 0, 0.05)",
+                        borderRadius: "8px",
+                    }}
+                >
+                    <button
+                    type="submit"
+                    style={{
+                        width: "100%",
+                        padding: "12px",
+                        fontSize: "clamp(1rem, 3vh, 10rem)"
+                    }}
+                    >
+                        Multiplayer
                     </button>
                 </form>
 

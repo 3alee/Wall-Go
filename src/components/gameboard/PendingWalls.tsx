@@ -5,7 +5,7 @@ import { Dispatch, SetStateAction } from "react";
 // Place a wall after a move
   async function handleWallPlace(
     game: GameState,
-    setGame: Dispatch<SetStateAction<GameState>>,
+    setGame: (game: GameState) => void | Promise<void>,
     type: "h" | "v",
     coord: Coord) {
         console.log(`Placing ${type} wall at (${coord.row}, ${coord.col})`);
@@ -19,7 +19,7 @@ import { Dispatch, SetStateAction } from "react";
 export function PendingWallsV({ game, setGame, gameData }:
     {
         game: GameState;
-        setGame: Dispatch<SetStateAction<GameState>>;
+        setGame: (game: GameState) => void | Promise<void>;
         gameData: GameData; }) {
     return (
         <>
@@ -61,7 +61,7 @@ export function PendingWallsV({ game, setGame, gameData }:
 export function PendingWallsH({ game, setGame, gameData }:
     {
         game: GameState;
-        setGame: Dispatch<SetStateAction<GameState>>;
+        setGame: (game: GameState) => void | Promise<void>;
         gameData: GameData; }) {
     return (
         <>

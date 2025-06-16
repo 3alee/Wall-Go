@@ -6,17 +6,21 @@ import { GameMode, GameOptions, GameState } from "../lib/types";
 import BackButton from "../components/BackButton";
 import { setGameState, setSetup } from "../lib/api";
 
-function GameOptionsPage({ onBack }: { onBack: () => void }) {
+type Props = {
+    onBack: (e: React.FormEvent) => void;
+    gameMode: GameMode;
+    gameId?: string;
+};
 
+function GameOptionsPage({ onBack, gameMode, gameId }: Props) {
     const [gameOptions, setGameOptions] = useState<GameOptions>({
-        gameMode: "local",
+        gameMode: gameMode,
         boardSize: 7,
         piecesPerPlayer: 2,
         numPlayers: 2,
+        gameId: gameId || "",
     });
 
-    const [gameModeInput, setGameModeInput] = useState<GameMode>("local");
-    const [gameIdInput, setGameIdInput] = useState<string>("");
     const [boardSizeInput, setBoardSizeInput] = useState<string>("7"); // raw string from input
     const [playersInput, setPlayersInput] = useState<string>("2"); // raw string from input
     const [piecesInput, setPiecesInput] = useState<string>("2"); // raw string from input
@@ -74,6 +78,8 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
         return (
             <SetupPhasePage
                 onBack={onBack}
+                gameMode={gameOptions.gameMode}
+                gameId={gameOptions.gameMode === "multiplayer" ? gameOptions.gameId : undefined}
             />);
     }
 
@@ -109,17 +115,6 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
-
-                    if (gameModeInput === "multiplayer" && gameIdInput.trim() === "") {
-                        alert("Game ID is required for multiplayer mode");
-                        return;
-                    }
-                    setGameOptions((prev) => ({
-                        ...prev,
-                        gameMode: gameModeInput,
-                        gameId: gameModeInput === "multiplayer" ? gameIdInput.trim() : undefined,
-                    }));
-
                     setShouldInitSetup(true);
                     setPage("setupphase");
                 }}
@@ -132,50 +127,6 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
                 fontSize: "clamp(1rem, 2.5vh, 1.5rem)",
                 }}
             >
-                <label style={{ display: "flex", justifyContent: "space-between" }}>
-                Game Mode:
-                <select
-                    value={gameModeInput}
-                    onChange={(e) => {
-                        setGameModeInput(e.target.value as "local" | "multiplayer");
-                        setGameOptions({
-                            ...gameOptions,
-                            gameMode: gameModeInput
-                        });
-                    }}
-                    style={{
-                    width: "clamp(8rem, 20vw, 12rem)",
-                    marginLeft: "1rem",
-                    fontSize: "inherit",
-                    }}
-                >
-                    <option value="local">Local</option>
-                    <option value="multiplayer">Multiplayer</option>
-                </select>
-                </label>
-
-                {gameModeInput === "multiplayer" && (
-                <label style={{ display: "flex", justifyContent: "space-between" }}>
-                    Game ID:
-                    <input
-                    type="text"
-                    value={gameIdInput}
-                    onChange={(e) => {
-                        setGameIdInput(e.target.value);
-                        setGameOptions({
-                            ...gameOptions,
-                            gameId: e.target.value,
-                        });
-                    }}
-                    style={{
-                        width: "clamp(6rem, 20vw, 12rem)",
-                        marginLeft: "1rem",
-                        fontSize: "inherit",
-                    }}
-                    required
-                    />
-                </label>
-                )}
 
                 <label style={{ display: "flex", justifyContent: "space-between" }}>
                 Board Size:

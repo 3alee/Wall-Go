@@ -5,7 +5,7 @@ import { movePiece } from "../../lib/api";
 // Select and move a piece (send path to backend)
 async function handleMovePath(
     game: GameState,
-    setGame: Dispatch<SetStateAction<GameState>>,
+    setGame: (game: GameState) => void | Promise<void>,
     setGameData: Dispatch<SetStateAction<GameData>>,
     path: CoordPath)
     {
@@ -56,7 +56,7 @@ export function HighlightSelection({ game, gameData }:
 export function ClickableSelection({ game, setGame, gameData, setGameData }:
     {
         game: GameState;
-        setGame: Dispatch<SetStateAction<GameState>>;
+        setGame: (game: GameState) => void | Promise<void>;
         setGameData: Dispatch<SetStateAction<GameData>>;
         gameData: GameData }) {
     return (

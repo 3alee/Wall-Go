@@ -14,7 +14,7 @@ export default function GameBoard(
         setGameData,
     }: {
         game: GameState;
-        setGame: Dispatch<SetStateAction<GameState>>;
+        setGame: (game: GameState) => void | Promise<void>;
         gameData: GameData;
         setGameData: Dispatch<SetStateAction<GameData>>;
     }) {
