@@ -28,6 +28,8 @@ function GamePhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
 		wall_pending: false,
 		num_players: 2,
 		pieces_per_player: 2,
+		game_mode: "local",
+		game_id: undefined,
     });
 
 	useEffect(() => {
@@ -63,9 +65,9 @@ function GamePhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
 			}
 			await Promise.all(promises);
 			if (Object.values(newSelectable).every(val => val === false)) {
-			// If no selectable pieces, automatically move to next player
-			const gameState = await nextPlayer();
-			setGame(gameState);
+				// If no selectable pieces, automatically move to next player
+				const gameState = await nextPlayer();
+				setGame(gameState);
 			}
 			setGameData(prev => ({ ...prev, selectablePieces: newSelectable }));
 			console.log("new selectables: ", newSelectable);
@@ -73,51 +75,51 @@ function GamePhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
 		}
 	}, [game.board, game.current_player, game.phase, game.board_size, game.walls_h, game.walls_v, game.wall_pending]);
 
-  // Get valid moves for the selected piece?
-  useEffect(() => {
-	if (
-		game.move_path.length === 1 &&
-		!game.wall_pending &&
-		game.phase === "Main" &&
-		game.winner === null
-	) {
-		const { row, col } = game.move_path[0];
-		setGameData(prev => ({ ...prev, validMovesSource: { row, col } }));
-		let cancelled = false;
-		getValidMovesForPiece(game.move_path[0]).then((movePaths) => {
-			if (!cancelled) {
-				setGameData(prev => ({ ...prev, validPaths: movePaths }));
-			}
-		});
-		return () => { cancelled = true; };
-	} else {
-		setGameData(prev => ({ ...prev, validPaths: [], validMovesSource: null }));
-	}
-	// eslint-disable-next-line
-  }, [game.move_path, game.board, game.walls_h, game.walls_v, game.wall_pending, game.phase, game.winner]);
+	// Get valid moves for the selected piece?
+	useEffect(() => {
+		if (
+			game.move_path.length === 1 &&
+			!game.wall_pending &&
+			game.phase === "Main" &&
+			game.winner === null
+		) {
+			const { row, col } = game.move_path[0];
+			setGameData(prev => ({ ...prev, validMovesSource: { row, col } }));
+			let cancelled = false;
+			getValidMovesForPiece(game.move_path[0]).then((movePaths) => {
+				if (!cancelled) {
+					setGameData(prev => ({ ...prev, validPaths: movePaths }));
+				}
+			});
+			return () => { cancelled = true; };
+		} else {
+			setGameData(prev => ({ ...prev, validPaths: [], validMovesSource: null }));
+		}
+		// eslint-disable-next-line
+	}, [game.move_path, game.board, game.walls_h, game.walls_v, game.wall_pending, game.phase, game.winner]);
 
-  // Update Region Scores
-  useEffect(() => {
-	if (game.winner !== null) {
-	  	getRegionScores().then(scores => setGameData(prev => ({ ...prev, regionScores: scores })));
-	} else {
-	  	setGameData(prev => ({ ...prev, regionScores: [] }));
-	}
-  }, [game.winner]); 
+	// Update Region Scores
+	useEffect(() => {
+		if (game.winner !== null) {
+			getRegionScores().then(scores => setGameData(prev => ({ ...prev, regionScores: scores })));
+		} else {
+			setGameData(prev => ({ ...prev, regionScores: [] }));
+		}
+	}, [game.winner]); 
 
-// Main phase
-  return (
-	<main className="container">
-		<BouncingImages />
-		<BackButton onBack={onBack} />
-		<GameHeader game={game} gameData={gameData}/>
-		<GameBoard
-			game={game}
-			setGame={setGame}
-			gameData={gameData}
-			setGameData={setGameData}
-		/>
-	</main>
+	// Main phase
+	return (
+		<main className="container">
+			<BouncingImages />
+			<BackButton onBack={onBack} />
+			<GameHeader game={game} gameData={gameData}/>
+			<GameBoard
+				game={game}
+				setGame={setGame}
+				gameData={gameData}
+				setGameData={setGameData}
+			/>
+		</main>
 	);
 }
 

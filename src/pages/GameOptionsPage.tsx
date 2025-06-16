@@ -2,19 +2,21 @@ import { useEffect, useState } from "react";
 import BouncingImages from "../components/BouncingImages";
 import "../styles/App.css";
 import SetupPhasePage from "./SetupPhasePage/SetupPhasePage";
-import { GameOptions } from "../lib/types";
-import { invoke } from "@tauri-apps/api/core";
+import { GameMode, GameOptions, GameState } from "../lib/types";
 import BackButton from "../components/BackButton";
-import { setBoardAndPlayer, setSetup } from "../lib/api";
+import { setGameState, setSetup } from "../lib/api";
 
 function GameOptionsPage({ onBack }: { onBack: () => void }) {
 
     const [gameOptions, setGameOptions] = useState<GameOptions>({
+        gameMode: "local",
         boardSize: 7,
         piecesPerPlayer: 2,
         numPlayers: 2,
     });
 
+    const [gameModeInput, setGameModeInput] = useState<GameMode>("local");
+    const [gameIdInput, setGameIdInput] = useState<string>("");
     const [boardSizeInput, setBoardSizeInput] = useState<string>("7"); // raw string from input
     const [playersInput, setPlayersInput] = useState<string>("2"); // raw string from input
     const [piecesInput, setPiecesInput] = useState<string>("2"); // raw string from input
@@ -29,15 +31,30 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
         (async () => {
             console.log("Setting up board and player");
 
-            await setBoardAndPlayer({
-                newBoard: Array(gameOptions.boardSize)
+
+            const newGameState: GameState = {
+                board: Array(gameOptions.boardSize)
                     .fill(null)
                     .map(() => Array(gameOptions.boardSize).fill(null)),
-                currentPlayer: 0,
-                numPlayers: gameOptions.numPlayers,
-                piecesPerPlayer: gameOptions.piecesPerPlayer,
-                boardSize: gameOptions.boardSize,
-            });
+                board_size: gameOptions.boardSize,
+                current_player: 0,
+                winner: null,
+                walls_h: [],
+                walls_v: [],
+                phase: "Setup",
+                move_path: [],
+                wall_pending: false,
+                num_players: gameOptions.numPlayers,
+                pieces_per_player: gameOptions.piecesPerPlayer,
+                game_mode: gameOptions.gameMode,
+            };
+            if (gameOptions.gameMode === "multiplayer" && gameOptions.gameId) {
+                newGameState.game_id = gameOptions.gameId
+            }
+
+            // await setBoardAndPlayer(newGameState);
+
+            await setGameState(newGameState);
 
             console.log("Invoking set_setup with:", {
                 pieces: Array(gameOptions.numPlayers).fill(gameOptions.piecesPerPlayer),
@@ -46,14 +63,18 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
             await setSetup({
                 pieces: Array(gameOptions.numPlayers).fill(gameOptions.piecesPerPlayer),
                 direction: 1,
-        });
+                gameMode: gameOptions.gameMode,
+            });
 
             setShouldInitSetup(false); // prevent re-invoking on rerenders
         })();
     }, [shouldInitSetup, gameOptions]);
 
     if (page == "setupphase") {
-        return <SetupPhasePage onBack={onBack}/>
+        return (
+            <SetupPhasePage
+                onBack={onBack}
+            />);
     }
 
     return (
@@ -88,6 +109,17 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
+
+                    if (gameModeInput === "multiplayer" && gameIdInput.trim() === "") {
+                        alert("Game ID is required for multiplayer mode");
+                        return;
+                    }
+                    setGameOptions((prev) => ({
+                        ...prev,
+                        gameMode: gameModeInput,
+                        gameId: gameModeInput === "multiplayer" ? gameIdInput.trim() : undefined,
+                    }));
+
                     setShouldInitSetup(true);
                     setPage("setupphase");
                 }}
@@ -101,6 +133,51 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
                 }}
             >
                 <label style={{ display: "flex", justifyContent: "space-between" }}>
+                Game Mode:
+                <select
+                    value={gameModeInput}
+                    onChange={(e) => {
+                        setGameModeInput(e.target.value as "local" | "multiplayer");
+                        setGameOptions({
+                            ...gameOptions,
+                            gameMode: gameModeInput
+                        });
+                    }}
+                    style={{
+                    width: "clamp(8rem, 20vw, 12rem)",
+                    marginLeft: "1rem",
+                    fontSize: "inherit",
+                    }}
+                >
+                    <option value="local">Local</option>
+                    <option value="multiplayer">Multiplayer</option>
+                </select>
+                </label>
+
+                {gameModeInput === "multiplayer" && (
+                <label style={{ display: "flex", justifyContent: "space-between" }}>
+                    Game ID:
+                    <input
+                    type="text"
+                    value={gameIdInput}
+                    onChange={(e) => {
+                        setGameIdInput(e.target.value);
+                        setGameOptions({
+                            ...gameOptions,
+                            gameId: e.target.value,
+                        });
+                    }}
+                    style={{
+                        width: "clamp(6rem, 20vw, 12rem)",
+                        marginLeft: "1rem",
+                        fontSize: "inherit",
+                    }}
+                    required
+                    />
+                </label>
+                )}
+
+                <label style={{ display: "flex", justifyContent: "space-between" }}>
                 Board Size:
                 <input
                     type="number"
@@ -108,22 +185,22 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
                     max={15}
                     value={boardSizeInput}
                     onChange={(e) => {
-                    const rawBoardSize = e.target.value;
-                    setBoardSizeInput(rawBoardSize);
-                    if (rawBoardSize === "") return;
+                        const rawBoardSize = e.target.value;
+                        setBoardSizeInput(rawBoardSize);
+                        if (rawBoardSize === "") return;
 
-                    const parsedBoardSize = Number(rawBoardSize);
-                    if (!isNaN(parsedBoardSize)) {
-                        setGameOptions({
-                        ...gameOptions,
-                        boardSize: parsedBoardSize
-                        });
-                    }
+                        const parsedBoardSize = Number(rawBoardSize);
+                        if (!isNaN(parsedBoardSize)) {
+                            setGameOptions({
+                                ...gameOptions,
+                                boardSize: parsedBoardSize
+                            });
+                        }
                     }}
                     style={{
-                    width: "clamp(3rem, 8vw, 5rem)",
-                    marginLeft: "1rem",
-                    fontSize: "inherit",
+                        width: "clamp(3rem, 8vw, 5rem)",
+                        marginLeft: "1rem",
+                        fontSize: "inherit",
                     }}
                 />
                 </label>
@@ -150,9 +227,9 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
                     //   setSetupTokens(getDefaultTokens(n, Number(piecesPerPlayer) || 1));
                     }}
                     style={{
-                    width: "clamp(3rem, 8vw, 5rem)",
-                    marginLeft: "1rem",
-                    fontSize: "inherit",
+                        width: "clamp(3rem, 8vw, 5rem)",
+                        marginLeft: "1rem",
+                        fontSize: "inherit",
                     }}
                 />
                 </label>
@@ -165,22 +242,22 @@ function GameOptionsPage({ onBack }: { onBack: () => void }) {
                     max={Math.floor(Math.pow(Number(gameOptions.boardSize),2) / Number(gameOptions.numPlayers))}
                     value={piecesInput}
                     onChange={(e) => {
-                    const rawPieces = e.target.value;
-                    setPiecesInput(rawPieces);
-                    if (rawPieces === "") return;
+                        const rawPieces = e.target.value;
+                        setPiecesInput(rawPieces);
+                        if (rawPieces === "") return;
 
-                    const parsedPiecesPerPlayer = Number(rawPieces);
-                    if (!isNaN(parsedPiecesPerPlayer)) {
-                        setGameOptions({
-                            ...gameOptions,
-                            piecesPerPlayer: parsedPiecesPerPlayer
-                        });
-                    }
+                        const parsedPiecesPerPlayer = Number(rawPieces);
+                        if (!isNaN(parsedPiecesPerPlayer)) {
+                            setGameOptions({
+                                ...gameOptions,
+                                piecesPerPlayer: parsedPiecesPerPlayer
+                            });
+                        }
                     }}
                     style={{
-                    width: "clamp(3rem, 8vw, 5rem)",
-                    marginLeft: "1rem",
-                    fontSize: "inherit",
+                        width: "clamp(3rem, 8vw, 5rem)",
+                        marginLeft: "1rem",
+                        fontSize: "inherit",
                     }}
                 />
                 </label>

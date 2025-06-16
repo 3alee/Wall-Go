@@ -8,7 +8,6 @@ import SetupHeader from "./SetupHeader";
 import SetupBoard from "../../components/setupboard/SetupBoard";
 import { getGameState, getSetupState, handleSetupMove, startMainPhase } from "../../lib/api";
 
-
 function SetupPhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {  
     const [setup, setSetup] = useState<SetupState>({
         pieces: [2, 2],
@@ -27,6 +26,8 @@ function SetupPhasePage({ onBack}: { onBack: (e: React.FormEvent) => void }) {
         wall_pending: false,
         num_players: 2,
         pieces_per_player: 2,
+        game_mode: "local",
+        game_id: undefined,
     });
 
     useEffect(() => {

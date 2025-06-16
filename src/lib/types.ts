@@ -2,7 +2,11 @@ export type GameOptions = {
     boardSize: number;
     piecesPerPlayer: number;
     numPlayers: number;
+    gameMode: GameMode;
+    gameId?: string;
 };
+
+export type GameMode = "local" | "multiplayer";
 
 export type SetupState = {
     pieces: number[];
@@ -28,11 +32,12 @@ export type GameState = {
     wall_pending: boolean;
     num_players: number;
     pieces_per_player: number;
-};
+    game_mode: GameMode;
+    game_id?: string;};
 
 export type SetupAndGameState = {
-  setup_state: SetupState;
-  game_state: GameState;
+    setup_state: SetupState;
+    game_state: GameState;
 };
 
 export type GameData = {

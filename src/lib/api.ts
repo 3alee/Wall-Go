@@ -1,19 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Coord, CoordPath, GameState, Piece, SetupAndGameState, SetupState } from "./types";
+import { Coord, CoordPath, GameMode, GameState, Piece, SetupAndGameState, SetupState } from "./types";
 
 //----------------------------------------------------------------
 // Game Options Phase
 /**
  * Initialize the game board and player configuration.
  */
-export async function setBoardAndPlayer(params: {
-    newBoard: (Piece | null)[][]; // assuming pieces can be placed or null
-    currentPlayer: number;
-    numPlayers: number;
-    piecesPerPlayer: number;
-    boardSize: number;
-}): Promise<void> {
-  return await invoke("set_board_and_player", params);
+export async function setGameState(
+    game_state: GameState
+): Promise<void> {
+  return await invoke("set_game_state", { gameState: game_state });
 }
 
 /**
@@ -22,6 +18,8 @@ export async function setBoardAndPlayer(params: {
 export async function setSetup(params: {
     pieces: number[];
     direction: number;
+    gameMode: GameMode;
+    gameId?: string;
 }): Promise<void> {
     return await invoke("set_setup", params);
 }

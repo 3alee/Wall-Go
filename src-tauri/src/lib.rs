@@ -4,34 +4,22 @@ pub struct Piece {
     pub player: usize,    // player number
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum GameMode {
+    Local,
+    Multiplayer,
+}
+
+// #[tauri::command(rename_all = "snake_case")]
 #[tauri::command]
-fn set_board_and_player(
-    new_board: Vec<Vec<Option<Piece>>>,
-    current_player: usize,
-    num_players: usize,
-    pieces_per_player: usize,
-    board_size: usize, // <-- add this parameter
+fn set_game_state(
+    game_state: GameState,
     state: State<SharedGameState>
 ) -> GameState {
     let mut game = state.lock().unwrap();
-    // Update board size and reinitialize board if needed
-    if game.board_size != board_size {
-        game.board_size = board_size;
-        game.board = vec![vec![None; board_size]; board_size];
-        game.walls_h.clear();
-        game.walls_v.clear();
-        game.move_path.clear();
-        game.winner = None;
-        game.phase = GamePhase::Setup;
-        game.wall_pending = false;
-    }
-    // Replace the board entirely (now guaranteed to match board_size)
-    if new_board.len() == board_size && new_board.iter().all(|row| row.len() == board_size) {
-        game.board = new_board.clone();
-    }
-    game.current_player = current_player;
-    game.num_players = num_players;
-    game.pieces_per_player = pieces_per_player;
+    println!("[Rust] set_game_state: {:?}", game);
+    *game = game_state;
     game.clone()
 }
 
@@ -717,7 +705,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(Arc::new(Mutex::new(GameState::default())))
         .manage(Arc::new(Mutex::new(SetupState::default())))
-        .invoke_handler(tauri::generate_handler![next_player, get_game_state, can_place_adjacent_wall, has_valid_moves, move_piece, place_wall, reset_game, reset_setup, start_main_phase, set_board_and_player, get_valid_moves_for_piece, get_region_scores, handle_setup_move, get_setup_state, set_setup])
+        .invoke_handler(tauri::generate_handler![next_player, get_game_state, can_place_adjacent_wall, has_valid_moves, move_piece, place_wall, reset_game, reset_setup, start_main_phase, set_game_state, get_valid_moves_for_piece, get_region_scores, handle_setup_move, get_setup_state, set_setup])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
